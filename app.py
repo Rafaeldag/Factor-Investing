@@ -20,12 +20,12 @@ if "carteira_atual" not in st.session_state:
             'data',
             'ticker',
             'EBIT_EV',
-            'ValorDeMercado'
+            'ValorDeMercado',
             'momento_6_meses',
             'ebit_dl',
             'volume_medio_prop_20_200',
             'EBIT_EV_RANK_carteira1',
-            'ValorDeMercado_RANK_carteira1'
+            'ValorDeMercado_RANK_carteira1',
             'momento_6_meses_RANK_carteira1',
             'ebit_dl_RANK_carteira1',
             'volume_medio_prop_20_200_RANK_carteira1',

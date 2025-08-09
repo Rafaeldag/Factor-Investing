@@ -1,9 +1,0 @@
-pandas
-numpy
-python-dateutil
-streamlit
-requests
-python-dotenv
-statsmodels
-matplotlib
-mplcyberpunk

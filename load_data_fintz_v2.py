@@ -138,9 +138,9 @@ if __name__ == "__main__":
                             }
     lista_indicadores = [
                          'EBIT_EV',
-                         'L_P',
-                         'ROE',
-                         'ROIC',
+                        #  'L_P',
+                        #  'ROE',
+                        #  'ROIC',
                          'ValorDeMercado',
                         #  'EBITDA_EV',
                         #  'P_EBITDA',
