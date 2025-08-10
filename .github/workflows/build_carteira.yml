@@ -71,9 +71,9 @@ jobs:
           git checkout --orphan data-latest || git checkout data-latest
 
           # zera a árvore de trabalho do branch
-          git rm -rf . || true
-          rm -rf ./* .[^.]* || true
-          git clean -fdx || true
+          # git rm -rf . || true
+          # rm -rf ./* .[^.]* || true
+          # git clean -fdx || true
 
           # restaura apenas os artefatos que queremos servir
           mkdir -p data/market_data data/factors_data results
