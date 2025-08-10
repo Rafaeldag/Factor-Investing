@@ -22,7 +22,7 @@ htmlcov/
 Thumbs.db
 
 # Dados (ajuste ao seu caso)
-data/market_data/
+# data/market_data/
 # ou, se preferir granular:
 # data/**/*.parquet
 # data/**/*.csv
