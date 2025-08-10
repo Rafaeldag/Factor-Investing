@@ -5,8 +5,6 @@ class PDF(FPDF):
 
     
     def header(self):
-     
-        self.image('./logo.png', 10, 8, 40)
         self.set_font('Arial', 'B', 20)
         self.ln(15)
         self.set_draw_color(35, 155, 132) #cor RGB
@@ -168,7 +166,7 @@ class MakePDF():
             self.pdf.cell(45, 8, nomes_estat_gerais[i], border = True, ln = False, align = "C")
             self.pdf.cell(25, 8, texto2, border = True, ln = True, align = "C")
 
-        self.pdf.image('./nave1.png', x = 70, y = 225, w = 75, h = 33)
+        # self.pdf.image('./nave1.png', x = 70, y = 225, w = 75, h = 33)
 
         self.pdf.cell(0, 40, ln = True)
 
@@ -213,7 +211,7 @@ class MakePDF():
             self.pdf.cell(53, 8, nome_indicadores_sem_lucro[i], border = True, ln = False, align = "C")
             self.pdf.cell(25, 8, texto2, border = True, ln = True, align = "C")
 
-        self.pdf.image('./nave2.png', x = 90, y = 105, w = 50, h = 50)
+        # self.pdf.image('./nave2.png', x = 90, y = 105, w = 50, h = 50)
 
     
     def grafico_underwater(self):

@@ -5,6 +5,12 @@ from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 import numpy as np
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz ao path para importar config
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from config import (DATA_DIR, RESULTS_DIR, IMAGES_DIR, get_data_path, get_market_data_path)
 
 class BigStrategy():
 
@@ -33,7 +39,8 @@ class BigStrategy():
         self.corretagem = 0
 
         self.caminho_imagens = None
-        self.caminho_benchmarks = r'C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\base_dados_br'
+        # Usa o caminho padrão do GitHub para benchmarks
+        self.caminho_benchmarks = str(DATA_DIR)
 
 
     def add_data(self, class_data):
@@ -42,13 +49,9 @@ class BigStrategy():
 
     def add_cdi(self):
 
-        if self.caminho_benchmarks == None:
-
-            self.dados_cdi = pd.read_parquet('./cdi.parquet')
-
-        else:
-
-            self.dados_cdi = pd.read_parquet(f'{self.caminho_benchmarks}/cdi.parquet')
+        # Usa sempre o caminho do market data
+        cdi_path = get_market_data_path('cdi.parquet')
+        self.dados_cdi = pd.read_parquet(cdi_path)
 
         self.dados_cdi['data'] = pd.to_datetime(self.dados_cdi['data'])
         self.dados_cdi = self.dados_cdi.set_index('data')

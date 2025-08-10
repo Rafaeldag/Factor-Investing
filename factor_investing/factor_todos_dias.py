@@ -3,6 +3,14 @@ import numpy as np
 import datetime
 from dateutil.relativedelta  import relativedelta
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz ao path para importar config
+sys.path.append(str(Path(__file__).parent.parent))
+from config import (DATA_DIR, RESULTS_DIR, IMAGES_DIR, CARTEIRAS_DIR, 
+                   get_data_path, get_results_path, get_carteira_path,
+                   get_market_data_path, get_factor_data_path)
 
 class carteira_totais():
      
@@ -13,8 +21,9 @@ class carteira_totais():
         
 
         self.nome_arquivo = nome_arquivo
-        self.caminho_imagens = caminho_imagens
-        self.caminho_dados = caminho_dados
+        # Se não especificado, usa os caminhos padrão do GitHub
+        self.caminho_imagens = caminho_imagens if caminho_imagens else IMAGES_DIR
+        self.caminho_dados = caminho_dados if caminho_dados else DATA_DIR
         self.nome_arquivo_atual = nome_arquivo_atual
 
         if nome_indicador == None:
@@ -47,12 +56,16 @@ class carteira_totais():
 
     def pegando_dados(self):
 
-        cotacoes = pd.read_parquet('cotacoes.parquet')
+        # Carrega cotações do diretório de market data
+        cotacoes_path = get_market_data_path('cotacoes.parquet')
+        cotacoes = pd.read_parquet(cotacoes_path)
         cotacoes['data'] = pd.to_datetime(cotacoes['data']).dt.date
         cotacoes['ticker'] = cotacoes['ticker'].astype(str)
         self.cotacoes = cotacoes.sort_values('data', ascending=True)
 
-        volume_mediano = pd.read_parquet('volume_mediano.parquet')
+        # Carrega volume mediano do diretório de factor data
+        volume_mediano_path = get_factor_data_path('volume_mediano.parquet')
+        volume_mediano = pd.read_parquet(volume_mediano_path)
         volume_mediano['data'] = pd.to_datetime(volume_mediano['data']).dt.date
         volume_mediano['ticker'] = volume_mediano['ticker'].astype(str)
         volume_mediano = volume_mediano[['data', 'ticker', 'valor']]
@@ -77,7 +90,9 @@ class carteira_totais():
 
                     lista_indicadores_sem_rep.append(indicador)
 
-                    lendo_indicador = pd.read_parquet(f'{indicador}.parquet')
+                    # Carrega indicador do diretório de factor data
+                    indicador_path = get_factor_data_path(f'{indicador}.parquet')
+                    lendo_indicador = pd.read_parquet(indicador_path)
                     lendo_indicador['data'] = pd.to_datetime(lendo_indicador['data']).dt.date
                     lendo_indicador['ticker'] = lendo_indicador['ticker'].astype(str)
                     lendo_indicador['valor'] = lendo_indicador['valor'].astype(float)
@@ -232,11 +247,14 @@ if __name__ == "__main__":
     '''
 
     
+    # Usa os caminhos padrão do GitHub
+    nome_arquivo_path = get_carteira_path(f"{nome_csv}.csv")
+    nome_arquivo_atual_path = get_carteira_path(f"{nome_arquivo_atual}.csv")
+    
     backtest = carteira_totais(data_inicial='2010-01-01',
                                data_final='2030-04-18',
-                               caminho_dados=r'C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\base_dados_br',
-                               nome_arquivo=fr'C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_csv}.csv',
-                               nome_arquivo_atual=fr'C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_arquivo_atual}.csv',
+                               nome_arquivo=str(nome_arquivo_path),
+                               nome_arquivo_atual=str(nome_arquivo_atual_path),
                                **dicionario_carteira)
 
 

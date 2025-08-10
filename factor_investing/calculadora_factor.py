@@ -7,6 +7,14 @@ import os
 from os import listdir
 from os.path import isfile, join
 import openpyxl
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz ao path para importar config
+sys.path.append(str(Path(__file__).parent.parent))
+from config import (DATA_DIR, RESULTS_DIR_FACTOR, IMAGES_DIR_FACTOR, CARTEIRAS_DIR_FACTOR, 
+                   get_data_path, get_results_path, get_carteira_path,
+                   get_market_data_path, get_factor_data_path)
 
 class backtest_indicators():
 
@@ -17,8 +25,9 @@ class backtest_indicators():
         
 
         self.nome_arquivo = nome_arquivo
-        self.caminho_imagens = caminho_imagens
-        self.caminho_dados = caminho_dados
+        # Se não especificado, usa os caminhos padrão do GitHub
+        self.caminho_imagens = caminho_imagens if caminho_imagens else IMAGES_DIR_FACTOR
+        self.caminho_dados = caminho_dados if caminho_dados else DATA_DIR
 
         if nome_indicador == None:
 
@@ -51,18 +60,24 @@ class backtest_indicators():
         self.corretagem = corretagem
         self.impacto_mercado = impacto_mercado
         self.dinheiro_inicial = 10000
+        
+        caminho_dados = self.caminho_dados
 
         os.chdir(caminho_dados)
 
 
     def pegando_dados(self):
 
-        cotacoes = pd.read_parquet('cotacoes.parquet')
+        # Carrega cotações do diretório de market data
+        cotacoes_path = get_market_data_path('cotacoes.parquet')
+        cotacoes = pd.read_parquet(cotacoes_path)
         cotacoes['data'] = pd.to_datetime(cotacoes['data']).dt.date
         cotacoes['ticker'] = cotacoes['ticker'].astype(str)
         self.cotacoes = cotacoes.sort_values('data', ascending=True)
 
-        volume_mediano = pd.read_parquet('volume_mediano.parquet')
+        # Carrega volume mediano do diretório de factor data
+        volume_mediano_path = get_factor_data_path('volume_mediano.parquet')
+        volume_mediano = pd.read_parquet(volume_mediano_path)
         volume_mediano['data'] = pd.to_datetime(volume_mediano['data']).dt.date
         volume_mediano['ticker'] = volume_mediano['ticker'].astype(str)
         volume_mediano = volume_mediano[['data', 'ticker', 'valor']]
@@ -87,7 +102,9 @@ class backtest_indicators():
 
                     lista_indicadores_sem_rep.append(indicador)
 
-                    lendo_indicador = pd.read_parquet(f'{indicador}.parquet')
+                    # Carrega indicador do diretório de factor data
+                    indicador_path = get_factor_data_path(f'{indicador}.parquet')
+                    lendo_indicador = pd.read_parquet(indicador_path)
                     lendo_indicador['data'] = pd.to_datetime(lendo_indicador['data']).dt.date
                     lendo_indicador['ticker'] = lendo_indicador['ticker'].astype(str)
                     lendo_indicador['valor'] = lendo_indicador['valor'].astype(float)
@@ -124,8 +141,6 @@ class backtest_indicators():
 
         self.df_dados = df_dados
 
-        print(max(df_dados['data']))
-
     def pegando_dias_das_carteiras(self, df):
 
         datas_disponiveis = np.sort(df['data'].unique())
@@ -139,8 +154,6 @@ class backtest_indicators():
         df_dados = df_dados.assign(TICKER_PREFIX = df_dados['ticker'].str[:4])
         df_dados = df_dados.loc[df_dados.groupby(['data', 'TICKER_PREFIX'])['volume'].idxmax()]
         df_dados = df_dados.drop('TICKER_PREFIX', axis = 1)
-
-        print(max(df_dados['data']))
 
         lista_df_carteiras = []
 
@@ -168,8 +181,6 @@ class backtest_indicators():
 
         self.carteira_por_periodo = carteira_por_periodo.reset_index()
 
-        print(self.carteira_por_periodo)
-
     def calculando_retorno_diario(self):
 
         cotacoes = self.cotacoes[(self.cotacoes['data'] >= self.carteira_por_periodo.iloc[0, 0]) &
@@ -188,6 +199,7 @@ class backtest_indicators():
         cotacoes = cotacoes.assign(var_fin = cotacoes.groupby('ticker')['preco_fechamento_ajustado'].diff())
 
         retorno_fin = cotacoes[['data', 'ticker', 'var_fin']]
+        # precos_diarios = cotacoes[['data', 'ticker', 'preco_fechamento_ajustado']]
         
         carteiras = self.carteira_por_periodo.copy()
         datas_rebalanceamento = carteiras['data'].unique()
@@ -197,6 +209,8 @@ class backtest_indicators():
         retorno_fin.set_index(["data", "ticker"], inplace=True)
         carteiras.set_index(["data", "ticker"], inplace=True)
         cotacoes_rebalanceamento.set_index(["data", "ticker"], inplace=True)
+        
+        positions_rows = []
 
         for i, data in enumerate(datas_carteira):
 
@@ -209,6 +223,31 @@ class backtest_indicators():
                 df_retornos.iloc[i, 1] = df_retornos.iloc[i - 1, 1] # Inicializando com o valor do dia anterior
                 df_retornos.iloc[i, 1] += var_patrimonio_no_dia  # Agora a operação de adição deve funcionar corretamente
                 df_retornos.iloc[i, 2] = carteira
+                
+                cotacoes_na_data = cotacoes_rebalanceamento.loc[data]
+                
+                carteira_vigente_att = carteira_vigente
+                
+                carteira_vigente_att.rename(columns={'preco_fechamento_ajustado': 'preco_compra'}, inplace=True)
+                if 'data' not in carteira_vigente_att.index.names:
+                    carteira_vigente_att['data'] = data
+                carteira_vigente_att = carteira_vigente_att.reset_index()
+                carteira_vigente_att.set_index(["data", "ticker"], inplace=True)
+                carteira_vigente_att = pd.merge(carteira_vigente_att, cotacoes_na_data, left_index=True, right_index=True)
+                carteira_vigente_att['dinheiro_por_acao'] = carteira_vigente_att['quantidade_acoes'] * carteira_vigente_att['preco_fechamento_ajustado']
+                
+                positions_rows.append(carteira_vigente_att.reset_index())     
+                    
+                # for ticker, row in carteira_vigente.iterrows():
+                #     positions_rows.append({
+                #         'data': data,
+                #         'ticker': ticker,
+                #         'quantidade': row['quantidade_acoes'],
+                #         'preco_compra': row['preco_compra'],
+                #         'preco': row['preco_fechamento_ajustado'],
+                #         'valor_posicao': row['quantidade_acoes'] * row['preco_fechamento_ajustado']
+                #     })
+                    
 
             if data in datas_rebalanceamento:
                 carteira_na_data = carteiras.loc[data].copy()
@@ -233,8 +272,13 @@ class backtest_indicators():
 
         df_retornos = df_retornos.assign(retorno = df_retornos['dinheiro'].pct_change())
         df_retornos = df_retornos.drop(0, axis = 0)
+        
+        df_posicoes = pd.concat(positions_rows)
+        caminho_csv = get_results_path(subfolder="carteiras", filename=nome_diarios)
+        df_posicoes.to_csv(caminho_csv, index=False, encoding='UTF8')
 
         self.df_retornos = df_retornos
+        # print(df_posicoes)
         print(df_retornos)
 
 
@@ -246,7 +290,9 @@ class backtest_indicators():
                          caminho_imagens=self.caminho_imagens, caminho_benchmarks= self.caminho_dados,
                               nome_arquivo=self.nome_arquivo)
         
-        self.carteira_por_periodo.to_csv(rf"C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\PDFS_BACKTEST\indicadores\{nome_csv}", sep=',', encoding='UTF8')
+        # Salva na pasta de resultados do GitHub
+        caminho_csv = get_results_path(subfolder="carteiras", filename=nome_csv)
+        self.carteira_por_periodo.to_csv(caminho_csv, sep=',', encoding='UTF8')
 
 
     def carteira_atual(self):
@@ -289,7 +335,9 @@ class backtest_indicators():
 
             df_carteiras_atual[f'posicao_{nome_carteira}'] = df_carteiras_atual[f'RANK_FINAL_{nome_carteira}'].rank()
             
-            df_carteiras_atual.to_csv(rf"C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\Carteira_atual.csv", sep=',', encoding='UTF8')
+            # Salva na pasta de carteiras do GitHub
+            caminho_carteira = get_carteira_path(nome_atual)
+            df_carteiras_atual.to_csv(caminho_carteira, sep=',', encoding='UTF8', index=False)
             
             portfolio_atual = df_carteiras_atual[df_carteiras_atual[f'posicao_{nome_carteira}'] <= self.numero_ativos]
             portfolio_atual = portfolio_atual.assign(peso = carteira['peso']/(portfolio_atual.groupby('data').transform('size')))
@@ -307,21 +355,25 @@ class backtest_indicators():
         print(self.carteira_atual)
         
         
-    def carteira_atual_trading(self):
-        onlyfiles = listdir(r'C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais')
-        # print(onlyfiles)
-        # print(rf"C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_xls}")
-        if nome_xls in onlyfiles:
-            carteira_excel = pd.read_excel(rf"C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_xls}", sheet_name='Carteira')
-            data = carteira_excel.iloc[0, 1].date()
-            ultima_carteira = self.carteira_atual.iloc[0, 1]
+    # def carteira_atual_trading(self):
+    #     # Usa o diretório de carteiras do GitHub
+    #     carteiras_dir = get_carteira_path()
+    #     onlyfiles = listdir(carteiras_dir)
+    #     # print(onlyfiles)
+    #     if nome_xls in onlyfiles:
+    #         caminho_excel = get_carteira_path(nome_xls)
+    #         carteira_excel = pd.read_excel(caminho_excel, sheet_name='Carteira')
+    #         data = carteira_excel.iloc[0, 1].date()
+    #         ultima_carteira = self.carteira_atual.iloc[0, 1]
             
-            if (ultima_carteira - data).days >= balanceamento/21*30:
-                carteira_atual = self.carteira_atual.copy()
-                carteira_atual.to_excel(rf"C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_xls}", sheet_name='Carteira', index=False)
-        else:
-            carteira_atual = self.carteira_atual.copy()
-            carteira_atual.to_excel(rf"C:\Users\rafae\OneDrive\Documentos\Projetos Pessoais\{nome_xls}", sheet_name='Carteira', index=False)
+    #         if (ultima_carteira - data).days >= balanceamento/21*30:
+    #             carteira_atual = self.carteira_atual.copy()
+    #             caminho_excel = get_carteira_path(nome_xls)
+    #             carteira_atual.to_excel(caminho_excel, sheet_name='Carteira', index=False)
+    #     else:
+    #         carteira_atual = self.carteira_atual.copy()
+    #         caminho_excel = get_carteira_path(nome_xls)
+    #         carteira_atual.to_excel(caminho_excel, sheet_name='Carteira', index=False)
 
 
 if __name__ == "__main__":
@@ -347,27 +399,34 @@ if __name__ == "__main__":
  }
     
 
-    nome_pdf = ''
-    nome_csv = ''
-    nome_xls = ''
+    nome_pdf     = ''
+    nome_csv     = ''
+    nome_xls     = ''
+    nome_atual   = 'atual_'
+    nome_diarios = 'diarios_'
+    
 
     for nome_carteira, carteira in dicionario_carteira.items():
             
-            nome_pdf = nome_pdf + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
-            nome_csv = nome_csv + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
-            nome_xls = nome_xls + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
+            nome_pdf     = nome_pdf     + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
+            nome_csv     = nome_csv     + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
+            nome_xls     = nome_xls     + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
+            nome_atual   = nome_atual   + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
+            nome_diarios = nome_diarios + nome_carteira + "_peso" + str(carteira['peso']).replace(".", "") + "_" 
 
             indicadores = carteira['indicadores']
 
             for indicador, ordem in indicadores.items():
 
-                nome_pdf = nome_pdf + indicador + "_"
-                nome_csv = nome_csv + indicador + "_"
-                nome_xls = nome_xls + indicador + "_"
+                nome_pdf     = nome_pdf     + indicador + "_"
+                nome_csv     = nome_csv     + indicador + "_"
+                nome_xls     = nome_xls     + indicador + "_"
+                nome_atual   = nome_atual   + indicador + "_"
+                nome_diarios = nome_diarios + indicador + "_"
 
     balanceamento = 21
     filtro_liquidez = 0.5
-    numero_ativos = 20
+    numero_ativos = 2
 
 
     '''
@@ -388,14 +447,17 @@ if __name__ == "__main__":
 
     '''
 
-    nome_csv = nome_csv + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.csv"
-    nome_xls = nome_xls + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.xlsx"
-    nome_pdf = nome_pdf + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.pdf"
+    nome_csv   =   nome_csv     + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.csv"
+    nome_xls   =   nome_xls     + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.xlsx"
+    nome_pdf   =   nome_pdf     + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.pdf"
+    nome_atual =   nome_atual   + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.csv"
+    nome_diarios = nome_diarios + str(balanceamento) + '_' + str(filtro_liquidez) + "M_" + str(numero_ativos) + "A.csv"
 
+    # Usa os caminhos padrão do GitHub
+    nome_arquivo = get_results_path('factor_investing', 'pdfs', nome_pdf)
     backtest = backtest_indicators(data_final="2025-12-30", data_inicial= '2001-01-01', filtro_liquidez=(filtro_liquidez * 1000000), balanceamento=balanceamento, 
-                                                numero_ativos=numero_ativos, caminho_dados=r'C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\base_dados_br',
-                                            caminho_imagens=r'C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\PDFS_BACKTEST\imagens', corretagem=0.0,
-                                                nome_arquivo=fr'C:\Users\rafae\OneDrive\Documentos\Bolsa de Valores\Modelos_Quantitativos\PDFS_BACKTEST\indicadores\{nome_pdf}',
+                                                numero_ativos=numero_ativos, 
+                                                nome_arquivo=str(nome_arquivo),
                                             **dicionario_carteira)
     
 
@@ -406,6 +468,6 @@ if __name__ == "__main__":
     backtest.make_report()
 
     backtest.carteira_atual()
-    backtest.carteira_atual_trading()
+    # backtest.carteira_atual_trading()
 
     

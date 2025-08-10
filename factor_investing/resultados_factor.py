@@ -12,6 +12,14 @@ from pandas.errors import SettingWithCopyWarning
 warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 from report_pdf_carteiras import MakePDF
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz ao path para importar config
+sys.path.append(str(Path(__file__).parent.parent))
+from config import (RESULTS_DIR_FACTOR, PDFS_DIR_FACTOR, IMAGES_DIR_FACTOR, CARTEIRAS_DIR_FACTOR, 
+                   get_data_path, get_results_path, get_carteira_path,
+                   get_market_data_path, get_factor_data_path)
 
 
 class MakeReportResult():
@@ -28,8 +36,8 @@ class MakeReportResult():
             os.chdir(caminho_imagens)
 
 
-        self.ibov = pd.read_parquet(f'{caminho_benchmarks}/ibov.parquet')
-        self.cdi = pd.read_parquet(f'{caminho_benchmarks}/cdi.parquet')
+        self.ibov = pd.read_parquet(get_market_data_path('ibov.parquet'))
+        self.cdi = pd.read_parquet(get_market_data_path('cdi.parquet'))
         self.cdi['cota'] = (1 + self.cdi['retorno']).cumprod() - 1
         self.ibov['retorno'] = self.ibov['fechamento'].pct_change()
 

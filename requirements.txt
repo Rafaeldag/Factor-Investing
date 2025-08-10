@@ -7,3 +7,7 @@ python-dotenv
 statsmodels
 matplotlib
 mplcyberpunk
+pathlib
+openpyxl
+google-cloud-sql-connector
+sqlalchemy
