@@ -3,7 +3,7 @@ name: build-carteira-daily
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # 06:00 UTC (≈ 03:00 BRT). Ajuste se quiser outro horário.
+    - cron: "0 6 * * 2-6"   # 06:00 UTC (≈ 03:00 BRT) de terça a sexta. Ajuste se quiser outro horário.
   workflow_dispatch:       # permite rodar manualmente
 
 concurrency:
@@ -43,7 +43,7 @@ jobs:
 
       # 3) Monta carteira/resultado final
       - name: Run factor calculator
-        run: python scripts/factor_investing/calculadora_factor.py
+        run: python scripts/calculadora_factor.py
 
       # Commit ONLY dos arquivos/diretórios solicitados
       - name: Commit updated outputs
