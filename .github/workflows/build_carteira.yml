@@ -39,7 +39,7 @@ jobs:
 
       # 2) Calcula fatores/indicadores
       - name: Build factors
-        run: python scripts/factor_investing/fazendo_indicador.py
+        run: python scripts/fazendo_indicador.py
 
       # 3) Monta carteira/resultado final
       - name: Run factor calculator
