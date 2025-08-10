@@ -1,29 +1,20 @@
-# ---- TOPO DO ARQUIVO (primeiras linhas) ----
-from pathlib import Path
-import sys
-
-# adiciona .../scripts ao sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-# sanity check (pode remover depois)
-assert (Path(__file__).resolve().parent.parent / "config.py").exists(), "config.py não encontrado em scripts/"
-
-# agora os demais imports
 import pandas as pd
 import numpy as np
 import datetime
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta  import relativedelta
+from resultados_factor import MakeReportResult
 import os
 from os import listdir
 from os.path import isfile, join
 import openpyxl
+import sys
+from pathlib import Path
 
-from config import (
-    DATA_DIR, RESULTS_DIR_FACTOR, IMAGES_DIR_FACTOR, CARTEIRAS_DIR_FACTOR,
-    get_data_path, get_results_path, get_carteira_path,
-    get_market_data_path, get_factor_data_path
-)
-from resultados_factor import MakeReportResult
+# Adiciona o diretório raiz ao path para importar config
+sys.path.append(str(Path(__file__).parent.parent))
+from config import (DATA_DIR, RESULTS_DIR_FACTOR, IMAGES_DIR_FACTOR, CARTEIRAS_DIR_FACTOR, 
+                   get_data_path, get_results_path, get_carteira_path,
+                   get_market_data_path, get_factor_data_path)
 
 class backtest_indicators():
 

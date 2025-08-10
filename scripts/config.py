@@ -10,7 +10,7 @@ GITHUB_REPO_URL = "https://github.com/Rafaeldag/quant_invest"
 GITHUB_DATA_URL = "https://github.com/Rafaeldag/quant_invest/tree/main/data"
 
 # Caminhos base do projeto
-PROJECT_ROOT = Path(__file__).parent.absolute()
+PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 DATA_DIR = PROJECT_ROOT / "data"
 MARKET_DATA_DIR = DATA_DIR / "market_data"
 FACTOR_DATA_DIR = DATA_DIR / "factors_data"
