@@ -3,7 +3,7 @@ name: build-carteira-daily
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # 09:00 UTC (≈ 06:00 BRT). Ajuste se quiser outro horário.
+    - cron: "0 6 * * *"   # 06:00 UTC (≈ 03:00 BRT). Ajuste se quiser outro horário.
   workflow_dispatch:       # permite rodar manualmente
 
 concurrency:
