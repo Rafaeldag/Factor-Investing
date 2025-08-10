@@ -10,3 +10,4 @@ mplcyberpunk
 pathlib
 openpyxl
 sqlalchemy
+seaborn
