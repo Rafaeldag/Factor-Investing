@@ -43,7 +43,7 @@ jobs:
 
       # 3) Monta carteira/resultado final
       - name: Run factor calculator
-        run: python calculadora_factor.py
+        run: python scripts/factor_investing/calculadora_factor.py
 
       # Commit ONLY dos arquivos/diretórios solicitados
       - name: Commit updated outputs
@@ -55,5 +55,6 @@ jobs:
             data/market_data/ibov.parquet \
             data/market_data/cotacoes.parquet \
             data/factors_data/
+            results/
           git commit -m "Atualiza dados e fatores diários [skip ci]" || echo "Sem mudanças"
           git push
