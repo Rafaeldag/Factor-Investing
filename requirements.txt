@@ -11,3 +11,4 @@ pathlib
 openpyxl
 sqlalchemy
 seaborn
+fpdf
