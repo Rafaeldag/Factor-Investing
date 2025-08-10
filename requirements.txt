@@ -12,3 +12,5 @@ openpyxl
 sqlalchemy
 seaborn
 fpdf
+itertools
+datetime
