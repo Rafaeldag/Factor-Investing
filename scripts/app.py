@@ -8,7 +8,7 @@ import streamlit as st
 
 st.set_page_config(page_title = "Ações Ordenadas - Factor", layout="wide")
 
-carteira_atual = "https://raw.githubusercontent.com/Rafaeldag/quant_invest/main/results/carteiras/atual_carteira1_peso1_ValorDeMercado_EBIT_EV_momento_6_meses_ebit_dl_volume_medio_prop_20_200_21_0.5M_2A.csv"
+carteira_atual = "https://raw.githubusercontent.com/Rafaeldag/quant_invest/data_latest/results/carteiras/atual_carteira1_peso1_ValorDeMercado_EBIT_EV_momento_6_meses_ebit_dl_volume_medio_prop_20_200_21_0.5M_2A.csv"
 
 # carteira_hist = 'carteira1_peso1_ValorDeMercado_EBIT_EV_momento_6_meses_ebit_dl_volume_medio_prop_20_200.csv'
 # carteira_atual = 'Carteira_atual.csv'
