@@ -85,15 +85,13 @@ with st.sidebar.expander("Filtros de Indicadores", expanded=False):
                             min_value=-99999999,
                         )
 
-# df_filtrado = df.loc[
-#       (df["Ação"].isin(tickers_filtro)) 
-#     & (df["Volume"] >= min_liquidez)
-#     & (df["EBIT/EV"] >= min_ebit_ev)
-#     & (df["Momentum 6M"] >= min_momentum6m)
-#     ]
+df_filtrado = df.loc[
+      (df["Ação"].isin(tickers_filtro)) 
+    & (df["Volume"] >= min_liquidez)
+    & (df["EBIT/EV"] >= min_ebit_ev)
+    & (df["Momentum 6M"] >= min_momentum6m)
+    ]
 
-df_filtrado = df
-        
 
 st.dataframe(
         df_filtrado.style.format({"Data": "{:%Y-%m-%d}"}),
