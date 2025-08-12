@@ -6,7 +6,7 @@ import os
 import streamlit as st
 # from config import get_carteira_path
 
-st.set_page_config(page_title = "Carteira Indicada - Factor", layout="wide")
+st.set_page_config(page_title = "Ações Ordenadas - Factor", layout="wide")
 
 carteira_atual = "https://raw.githubusercontent.com/Rafaeldag/quant_invest/main/results/carteiras/atual_carteira1_peso1_ValorDeMercado_EBIT_EV_momento_6_meses_ebit_dl_volume_medio_prop_20_200_21_0.5M_2A.csv"
 
