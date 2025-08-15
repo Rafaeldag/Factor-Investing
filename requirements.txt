@@ -1,0 +1,15 @@
+pandas
+numpy
+python-dateutil
+streamlit
+requests
+python-dotenv
+statsmodels
+matplotlib
+mplcyberpunk
+pathlib
+openpyxl
+sqlalchemy
+seaborn
+fpdf
+datetime
