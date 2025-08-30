@@ -1,0 +1,92 @@
+# .github/workflows/build_carteira.yml
+name: build-carteira-daily
+
+on:
+  schedule:
+    - cron: "0 6 * * 2-6"   # 06:00 UTC (≈ 03:00 BRT) de terça a sexta
+  workflow_dispatch:         # permite rodar manualmente
+
+concurrency:
+  group: build-carteira-daily
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write        # necessário para git push via GITHUB_TOKEN
+
+    env:
+      API_FINTZ: ${{ secrets.API_FINTZ }}  # cadastre em Settings > Secrets > Actions
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # garante que possamos criar/push de branch sem problemas
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      # 1) Baixa/atualiza dados de mercado
+      - name: Load data (Fintz)
+        run: python scripts/load_data_fintz.py
+
+      # 2) Calcula fatores/indicadores
+      - name: Build factors
+        run: python scripts/fazendo_indicador.py
+
+      # 3) Monta carteira/resultado final
+      - name: Run factor calculator
+        run: python scripts/calculadora_factor.py
+
+      # 4) Empacota SOMENTE o que vamos publicar
+      - name: Stage artifacts for publish
+        run: |
+          set -e
+          mkdir -p /tmp/publish/data/market_data
+          mkdir -p /tmp/publish/data/factors_data
+          mkdir -p /tmp/publish/results
+
+          cp -f  data/market_data/cdi.parquet       /tmp/publish/data/market_data/ || true
+          cp -f  data/market_data/ibov.parquet      /tmp/publish/data/market_data/ || true
+          cp -f  data/market_data/cotacoes.parquet  /tmp/publish/data/market_data/ || true
+          cp -rf data/factors_data/*                /tmp/publish/data/factors_data/ || true
+          cp -rf results/*                          /tmp/publish/results/ || true
+
+      # 5) Publica snapshot ÚNICO no branch data-latest (sem histórico)
+      - name: Publish artifacts to data-latest (single-commit branch)
+        run: |
+          set -e
+          git fetch origin
+
+          # cria/switch para um branch órfão (sem histórico)
+          git checkout --orphan data-latest || git checkout data-latest
+
+          # zera a árvore de trabalho do branch
+          # git rm -rf . || true
+          # rm -rf ./* .[^.]* || true
+          # git clean -fdx || true
+
+          # restaura apenas os artefatos que queremos servir
+          mkdir -p data/market_data data/factors_data results
+          cp -rf /tmp/publish/data/market_data/* data/market_data/ || true
+          cp -rf /tmp/publish/data/factors_data/* data/factors_data/ || true
+          cp -rf /tmp/publish/results/*         results/ || true
+
+          # adiciona ignorando .gitignore
+          git add -f data/market_data data/factors_data results
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refresh data $(date -u +'%Y-%m-%d %H:%M:%S UTC') [skip ci]" || echo "Sem mudanças"
+
+          # força manter apenas UM commit nesse branch
+          git push -f origin data-latest
